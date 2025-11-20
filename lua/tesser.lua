@@ -37,7 +37,7 @@ function M.save_project(project_id)
     project_file:close()
 end
 
---- Sets key to current file.
+--- Sets current file to key.
 --- @param key string
 function M.set(key)
     local project_id, project = M.load_current_project()
