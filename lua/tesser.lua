@@ -2,23 +2,14 @@ local config = require("lua.config")
 local serial = require("lua.serial")
 local data = require("lua.data")
 
-local M = {}
+local M = {
+    keys = config.keys,
+}
 
 local tesserAutoGroup = vim.api.nvim_create_augroup("Tesser", { clear = true })
 
-function M.setup(opts) end
-
---- Iterator for each configured key.
---- @return fun():string|nil
-function M.keys()
-    local keys = table.concat(config.keys, "")
-    local i = 0
-
-    return function()
-        i = i + 1
-        if i > #keys then return end
-        return keys:sub(i, i)
-    end
+function M.setup(opts)
+    config.opts = vim.tbl_deep_extend("force", config, opts)
 end
 
 --- Sets current file to key.

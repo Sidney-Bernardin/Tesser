@@ -6,7 +6,7 @@ local M = {}
 --- @return string[] lines
 function M.encode_project(map)
     local lines = {}
-    for _, group in ipairs(config.keys) do
+    for _, group in ipairs(config.opts.keys) do
         for key in group:gmatch(".") do
             if map[key] then
                 table.insert(lines, ("%s %s"):format(key, map[key]))
