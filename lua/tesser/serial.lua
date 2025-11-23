@@ -1,4 +1,4 @@
-local config = require("lua.config")
+local config = require("tesser.config")
 local M = {}
 
 --- Converts project from key-value map, to formated lines.

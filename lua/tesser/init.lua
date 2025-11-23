@@ -1,6 +1,6 @@
-local config = require("lua.config")
-local serial = require("lua.serial")
-local data = require("lua.data")
+local config = require("tesser.config")
+local serial = require("tesser.serial")
+local data = require("tesser.data")
 
 local M = {
     keys = config.keys,
