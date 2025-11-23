@@ -1,4 +1,4 @@
-local serial = require "lua.serial"
+local serial = require("lua.serial")
 
 local M = {
     data_path = ("%s/tesser"):format(vim.fn.stdpath("data")),
