@@ -14,6 +14,6 @@ vim.api.nvim_create_user_command("TesserClearAll", function()
     require("tesser").clear_all()
 end, {})
 
-vim.api.nvim_create_user_command("TesserPrint", function()
-    require("tesser").print()
+vim.api.nvim_create_user_command("TesserEdit", function()
+    require("tesser").edit()
 end, {})

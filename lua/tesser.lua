@@ -1,55 +1,39 @@
-local M = {
-    keys = "1234567890qwertyuiopasdfghjkl;zxcvbnm,./",
-    projects = {},
-}
+local config = require("lua.config")
+local serial = require("lua.serial")
+local data = require("lua.data")
 
---- Initialize data directory.
-local data_path = ("%s/tesser"):format(vim.fn.stdpath("data"))
-if vim.fn.isdirectory(data_path) == 0 then
-    vim.fn.mkdir(data_path)
-end
+local M = {}
 
---- Returns current project's ID.
-function M.get_current_project_id()
-    local cwd = vim.fn.getcwd(-1)
-    return ("%s/%s.json"):format(data_path, vim.fn.sha256(cwd))
-end
+local tesserAutoGroup = vim.api.nvim_create_augroup("Tesser", { clear = true })
 
---- Returns current project and it's ID.
---- @return string project_id
---- @return table<string, string> project
-function M.load_current_project()
-    local project_id = M.get_current_project_id()
+function M.setup(opts) end
 
-    if not M.projects[project_id] then
-        local _, project_json = pcall(vim.fn.readblob, project_id)
-        local ok, project = pcall(vim.json.decode, project_json)
-        M.projects[project_id] = ok and project or {}
+--- Iterator for each configured key.
+--- @return fun():string|nil
+function M.keys()
+    local keys = table.concat(config.keys, "")
+    local i = 0
+
+    return function()
+        i = i + 1
+        if i > #keys then return end
+        return keys:sub(i, i)
     end
-
-    return project_id, M.projects[project_id]
-end
-
---- Saves project to disk.
-function M.save_project(project_id)
-    local project_file = assert(io.open(project_id, "w"))
-    project_file:write(vim.json.encode(M.projects[project_id]))
-    project_file:close()
 end
 
 --- Sets current file to key.
 --- @param key string
 function M.set(key)
-    local project_id, project = M.load_current_project()
+    local project_id, project = data.load_current_project()
     project[key] = vim.fn.expand("%:.")
-    M.save_project(project_id)
+    data.save_project(project_id)
     vim.notify(("Tesser: [%s] set to %s"):format(key, project[key]))
 end
 
 --- Opens key's file.
 --- @param key string
 function M.open(key)
-    local _, project = M.load_current_project()
+    local _, project = data.load_current_project()
 
     if not project[key] then
         vim.notify(("Tesser: [%s] is empty"):format(key), vim.log.levels.ERROR)
@@ -62,27 +46,59 @@ end
 --- Clears key.
 --- @param key string
 function M.clear(key)
-    local project_id, project = M.load_current_project()
+    local project_id, project = data.load_current_project()
     project[key] = nil
-    M.save_project(project_id)
+    data.save_project(project_id)
     vim.notify(("Tesser: [%s] cleared"):format(key))
 end
 
 --- Clears all keys.
 function M.clear_all()
-    local project_id = M.get_current_project_id()
-    M.projects[project_id] = nil
+    local project_id = data.get_current_project_id()
+    data.projects[project_id] = nil
     os.remove(project_id)
     vim.notify("Tesser: Cleared all")
 end
 
---- Prints keys.
-function M.print()
-    local _, project = M.load_current_project()
+--- Opens edit window.
+function M.edit()
+    local project_id, project = data.load_current_project()
 
-    for key in M.keys:gmatch(".") do
-        print(("%s: %s"):format(key, project[key]))
-    end
+    -- Create buffer.
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(buf, "tesser")
+    vim.api.nvim_set_option_value("buftype", "acwrite", { buf = buf })
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, serial.encode_project(project))
+
+    -- Create window.
+    local width = math.floor(vim.o.columns * 0.5)
+    local height = math.floor(vim.o.lines * 0.75)
+    local win = vim.api.nvim_open_win(buf, true, {
+        title = "Tesser",
+        relative = "editor",
+        width = width,
+        height = height,
+        col = math.floor((vim.o.columns - width) / 2),
+        row = math.floor((vim.o.lines - height) / 2),
+        border = "rounded",
+    })
+    vim.api.nvim_set_option_value("cc", nil, { win = win })
+    vim.api.nvim_set_option_value("signcolumn", "no", { win = win })
+
+    vim.api.nvim_create_autocmd({ "BufWriteCmd", "BufLeave" }, {
+        group = tesserAutoGroup,
+        buffer = buf,
+        callback = function()
+            project = serial.decode_project(vim.api.nvim_buf_get_lines(buf, 0, -1, true))
+            data.projects[project_id] = project
+            data.save_project(project_id)
+            vim.api.nvim_buf_delete(buf, { force = true })
+        end,
+    })
+
+    local close_win = function() vim.api.nvim_win_close(win, true) end
+    vim.keymap.set("n", "q", close_win, { buffer = buf })
+    vim.keymap.set("n", "<esc>", close_win, { buffer = buf })
 end
 
 return M
