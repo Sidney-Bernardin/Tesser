@@ -15,16 +15,16 @@ end
 --- Sets current file to key.
 --- @param key string
 function M.set(key)
-    local project_id, project = data.load_current_project()
+    local project_id, project = data.get_current_project()
     project[key] = vim.fn.expand("%:.")
-    data.save_project(project_id)
+    data.save_project(project_id, project)
     vim.notify(("Tesser: [%s] set to %s"):format(key, project[key]))
 end
 
 --- Opens key's file.
 --- @param key string
 function M.open(key)
-    local _, project = data.load_current_project()
+    local _, project = data.get_current_project()
 
     if not project[key] then
         vim.notify(("Tesser: [%s] is empty"):format(key), vim.log.levels.ERROR)
@@ -37,23 +37,15 @@ end
 --- Clears key.
 --- @param key string
 function M.clear(key)
-    local project_id, project = data.load_current_project()
+    local project_id, project = data.get_current_project()
     project[key] = nil
     data.save_project(project_id)
     vim.notify(("Tesser: [%s] cleared"):format(key))
 end
 
---- Clears all keys.
-function M.clear_all()
-    local project_id = data.get_current_project_id()
-    data.projects[project_id] = nil
-    os.remove(project_id)
-    vim.notify("Tesser: Cleared all")
-end
-
 --- Opens edit window.
 function M.edit()
-    local project_id, project = data.load_current_project()
+    local project_id, project = data.get_current_project()
 
     -- Create buffer.
     local buf = vim.api.nvim_create_buf(false, true)
@@ -81,8 +73,7 @@ function M.edit()
         buffer = buf,
         callback = function()
             project = serial.decode_project(vim.api.nvim_buf_get_lines(buf, 0, -1, true))
-            data.projects[project_id] = project
-            data.save_project(project_id)
+            data.save_project(project_id, project)
             vim.api.nvim_buf_delete(buf, { force = true })
         end,
     })
