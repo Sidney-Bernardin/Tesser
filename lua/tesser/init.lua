@@ -8,6 +8,7 @@ local M = {
 
 local tesserAutoGroup = vim.api.nvim_create_augroup("Tesser", { clear = true })
 
+--- @param opts Options
 function M.setup(opts)
     config.opts = vim.tbl_deep_extend("force", config, opts)
 end
