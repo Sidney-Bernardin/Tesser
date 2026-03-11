@@ -4,7 +4,6 @@
 ```lua
 {
     "Sidney-Bernardin/tesser.nvim",
-    -- dir = "~/projects/neovim_plugins/tesser.nvim",
     config = function()
         local tesser = require("tesser")
 
